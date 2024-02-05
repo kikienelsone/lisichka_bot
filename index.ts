@@ -1,4 +1,4 @@
-import {Bot, Context, InputFile, session, type SessionFlavor} from "grammy";
+import {Bot, Context, GrammyError, HttpError, InputFile, session, type SessionFlavor} from "grammy";
 import type {ScenesFlavor, ScenesSessionData} from "grammy-scenes";
 import {generate, getToken, picGeneration} from "./Requests.ts";
 import {getUsersId} from "./UsersId.ts";
@@ -17,12 +17,28 @@ export function initial(): SessionData {
     };
 }
 
+// const getMe = await bot.api.getMe()
+
+bot.catch((err) => {
+    const ctx = err.ctx;
+    console.error(`Error while handling update ${ctx.update.update_id}:`);
+    const e = err.error;
+    if (e instanceof GrammyError) {
+        console.error("Error in request:", e.description);
+    } else if (e instanceof HttpError) {
+        console.error("Could not contact Telegram:", e);
+    } else {
+        console.error("Unknown error:", e);
+    }
+});
+
 bot.use(session({initial}))
 bot.command("start", async (ctx) => {
     await ctx.reply("Привет! Я Бот Лисичка, я могу создать тебе любую картинку или просто поболтать с тобой 🧡")
 });
-bot.hears(/@lisichka_craba_bot/gi,  async (ctx) => {
-    const userRequest = ctx.message?.text?.split("@lisichka_craba_bot")[1]
+bot.hears(new RegExp(process.env.BOTNAME, "gi"),  async (ctx) => {
+    // console.log(`@${getMe.username}`)
+    const userRequest = ctx.message?.text?.split(process.env.BOTNAME)[1]
    await ctx.reply("Иду искать картинку👀", {
         reply_parameters: {message_id: ctx.msg.message_id}
     })
@@ -41,17 +57,29 @@ bot.hears(/@lisichka_craba_bot/gi,  async (ctx) => {
 
 })
 
+// bot.on("message").filter(
+//     async (ctx) => {
+//         console.log("first on")
+//         const user = await ctx.getAuthor();
+//         // console.log(user)
+//         return ctx.message.text === "creator";
+//     },
+//     async (ctx) => {
+//        await ctx.reply("yt pyf.")
+//     },
+// );
+
 bot.on("message:media", async (ctx) => {
     await ctx.react("😍")
 })
 bot.on("message:text", async (ctx) => {
-    const userId = ctx.from.id
+    const user = await ctx.getAuthor();
     const userRequest = ctx.message?.text
     const thunk = /спасибо/gi
     const hello = /привет/gi
-    console.log(userId, userRequest)
+    console.log(user, userRequest)
     if (userRequest?.match(hello)){
-        await ctx.reply(`Привет ${getUsersId(userId)}👋`, {
+        await ctx.reply(`Привет ${getUsersId(user.user?.id)}👋`, {
             reply_parameters: {message_id: ctx.msg.message_id}
         })
     }
@@ -61,7 +89,7 @@ bot.on("message:text", async (ctx) => {
 
 })
 
-await bot.api.sendMessage(496131654, "какашка")
+await bot.api.sendMessage(496131654, "Люблю краба")
 
 // bot.use(scenes)
 void bot.start()

@@ -7,6 +7,8 @@ export interface IProcessEnv {
     KANDINSKY_SECRET: string;
     GIGA_AUTH_URL: string;
     NODE_TLS_REJECT_UNAUTHORIZED: number;
+    BOTNAME:string
+
 }
 
 declare global {
